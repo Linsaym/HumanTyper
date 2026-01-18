@@ -22,10 +22,9 @@ type Preset struct {
 }
 
 var presets = []Preset{
-	{"slow", 1.4, 0.03, true},
-	{"normal", 1.0, 0.05, true},
-	{"fast", 0.7, 0.08, true},
-	{"careful", 1.2, 0.01, true},
+	{"Идеально", 0.7, 0.01, true},
+	{"Програмист", 1.0, 0.05, true},
+	{"Тормоз", 1.4, 0.08, true},
 }
 
 var (
@@ -35,7 +34,7 @@ var (
 )
 
 func main() {
-	flag.StringVar(&presetName, "preset", "normal", "Preset: slow|normal|fast|careful")
+	flag.StringVar(&presetName, "preset", "Програмист", "Preset: Идеально|Програмист|Тормоз")
 	flag.Float64Var(&speedMul, "speed", 1.0, "Speed multiplier (0.5..2.0). Lower = slower")
 	flag.Float64Var(&errorRate, "errors", -1.0, "Error rate (0..0.3). If set overrides preset")
 	flag.Parse()
@@ -52,9 +51,8 @@ func main() {
 		preset.Speed *= speedMul
 	}
 
-	log.Printf("Preset: %s | speed=%.2f | errors=%.3f\n", preset.Name, preset.Speed, preset.ErrorRate)
+	log.Printf("Пресет: %s | скорость=%.2f | ошибки=%.3f\n", preset.Name, preset.Speed, preset.ErrorRate)
 
-	// hotkey Shift+Space
 	hk := hotkey.New([]hotkey.Modifier{hotkey.ModShift}, hotkey.KeySpace)
 	if err := hk.Register(); err != nil {
 		log.Fatal(err)
@@ -87,16 +85,17 @@ func humanType(text string, p *Preset) {
 			continue
 		}
 
-		// шанс мисклика
+		// Пропускаем \r, чтобы избежать двойного переноса в \r\n
+		if char == "\r" {
+			continue
+		}
+
 		if p.Misclicks && shouldMisclick(char, p.ErrorRate) {
 			if wrong := randomNeighbor(char); wrong != "" {
-				// печатаем неправильный
 				typeChar(wrong, p.Speed)
 				sleep(80, 180, p.Speed)
-				// стираем
 				robotgo.KeyTap("backspace")
 				sleep(60, 140, p.Speed)
-				// печатаем правильный
 				typeChar(char, p.Speed)
 				applyDelay(char, p.Speed)
 				continue
@@ -111,8 +110,11 @@ func humanType(text string, p *Preset) {
 // ====== typing ======
 
 func typeChar(char string, speed float64) {
-	// robotgo.TypeStr умеет печатать Unicode
-	robotgo.TypeStr(char)
+	if char == "\n" {
+		robotgo.KeyTap("enter")
+	} else {
+		robotgo.Type(char)
+	}
 	sleep(20, 60, speed)
 }
 
@@ -224,7 +226,6 @@ func randomNeighbor(char string) string {
 // ====== misc ======
 
 func canType(char string) bool {
-	// robotgo печатает Unicode, поэтому можно печатать всё
 	return len(char) > 0
 }
 
